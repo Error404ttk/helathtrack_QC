@@ -49,7 +49,7 @@ pm2 logs
 ```
 
 ## Port Configuration
-- Frontend: http://localhost:3003
+- Frontend: http://localhost:3005
 - Backend API: http://localhost:3004
 
 ## Database Setup

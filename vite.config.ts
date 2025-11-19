@@ -6,8 +6,9 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
       server: {
-        port: 3003,
+        port: 3005,
         host: '0.0.0.0',
+        allowedHosts: ['healthtrack.sarapeehospital.go.th', 'localhost', '127.0.0.1']
       },
       plugins: [react()],
       define: {
