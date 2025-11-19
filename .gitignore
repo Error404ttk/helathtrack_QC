@@ -17,6 +17,7 @@ dist-ssr
 *.db
 *.sqlite
 *.sqlite3
+server/db.cjs
 
 # PM2 logs and config
 .pm2/

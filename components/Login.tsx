@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Lock, User, KeyRound, ShieldCheck } from 'lucide-react';
 
@@ -6,7 +5,7 @@ interface LoginProps {
   onLogin: () => void;
 }
 
-const API_URL = 'http://localhost:3004/api';
+const API_URL = '/api';
 
 export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [username, setUsername] = useState('');

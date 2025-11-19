@@ -1,11 +1,10 @@
-
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const db = require('./db.cjs');
 
 const app = express();
-const PORT = 3004;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3004;
 
 app.use(cors());
 app.use(bodyParser.json());

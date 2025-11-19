@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
@@ -7,7 +6,7 @@ import { Login } from './components/Login';
 import { Department, Team, DocStatus, ViewMode, TeamCategory } from './types';
 import { LayoutDashboard, PenTool } from 'lucide-react';
 
-const API_URL = 'http://localhost:3004/api'; // Change this if your server runs elsewhere
+const API_URL = '/api'; // Use relative API base so Vite proxy/production domain works
 
 const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('DASHBOARD');
