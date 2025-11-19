@@ -8,7 +8,14 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3005,
         host: '0.0.0.0',
-        allowedHosts: ['healthtrack.sarapeehospital.go.th', 'localhost', '127.0.0.1']
+        allowedHosts: ['healthtrack.sarapeehospital.go.th', 'localhost', '127.0.0.1'],
+        proxy: {
+          '/api': {
+            target: 'http://localhost:3004',
+            changeOrigin: true,
+            secure: false
+          }
+        }
       },
       plugins: [react()],
       define: {
