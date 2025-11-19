@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
     const isProd = mode === 'production' || process.env.NODE_ENV === 'production';
     const apiTarget = isProd
       ? 'https://healthtrack.sarapeehospital.go.th/api'
-      : 'http://localhost:3004';
+      : 'http://localhost:3006';
 
     return {
       server: {
@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => {
         // Ensure API calls proxy correctly when running `vite preview` (defaults to port 4173)
         proxy: {
           '/api': {
-            target: 'http://localhost:3004',
+            target: 'http://localhost:3006',
             changeOrigin: true,
             secure: false
           }

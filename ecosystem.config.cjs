@@ -10,7 +10,7 @@ module.exports = {
       max_memory_restart: '1G',
       env: {
         NODE_ENV: "production",
-        PORT: 3004
+        PORT: 3006
       },
       // Log date format
       log_date_format: "YYYY-MM-DD HH:mm:ss Z"
