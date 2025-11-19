@@ -11,9 +11,12 @@ export default defineConfig(({ mode }) => {
         allowedHosts: ['healthtrack.sarapeehospital.go.th', 'localhost', '127.0.0.1'],
         proxy: {
           '/api': {
-            target: 'http://localhost:3004',
+            target: process.env.NODE_ENV === 'production' 
+              ? 'https://healthtrack.sarapeehospital.go.th/api'
+              : 'http://localhost:3004',
             changeOrigin: true,
-            secure: false
+            secure: process.env.NODE_ENV === 'production',
+            rewrite: (path) => path.replace(/^\/api/, '/api')
           }
         }
       },
