@@ -4,6 +4,11 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    const isProd = mode === 'production' || process.env.NODE_ENV === 'production';
+    const apiTarget = isProd
+      ? 'https://healthtrack.sarapeehospital.go.th/api'
+      : 'http://localhost:3004';
+
     return {
       server: {
         port: 3005,
@@ -11,12 +16,9 @@ export default defineConfig(({ mode }) => {
         allowedHosts: ['healthtrack.sarapeehospital.go.th', 'localhost', '127.0.0.1'],
         proxy: {
           '/api': {
-            target: process.env.NODE_ENV === 'production' 
-              ? 'https://healthtrack.sarapeehospital.go.th/api'
-              : 'http://localhost:3004',
+            target: apiTarget,
             changeOrigin: true,
-            secure: process.env.NODE_ENV === 'production',
-            rewrite: (path) => path.replace(/^\/api/, '/api')
+            secure: isProd
           }
         }
       },
@@ -26,8 +28,7 @@ export default defineConfig(({ mode }) => {
           '/api': {
             target: 'http://localhost:3004',
             changeOrigin: true,
-            secure: false,
-            rewrite: (path) => path.replace(/^\/api/, '/api')
+            secure: false
           }
         }
       },
