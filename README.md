@@ -2,19 +2,64 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# HealthTrack QC Dashboard
+ระบบติดตามเอกสารคุณภาพสำหรับศูนย์ข้อมูล
 
-This contains everything you need to run your app locally.
+## Features
+- Frontend: React with TypeScript, Vite
+- Backend: Node.js with Express
+- Database: MySQL
+- Process Management: PM2
 
-View your app in AI Studio: https://ai.studio/apps/drive/1VKzAA4uNPXxNImwRL6jKAdkqeoloN9gg
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
+## Installation
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```bash
+   npm install
+   ```
+
+2. Configure database:
+   - Edit `server/db.cjs` with your database credentials
+   - Create database and run the SQL schema
+
+3. Set environment variables (optional):
+   - Create `.env.local` for API keys if needed
+
+## Running the Application
+
+### Development Mode
+```bash
+# Frontend only
+npm run dev
+
+# Backend only
+node server/index.cjs
+```
+
+### Production with PM2
+```bash
+# Start both frontend and backend
+pm2 start ecosystem.config.cjs
+
+# Check status
+pm2 list
+
+# View logs
+pm2 logs
+```
+
+## Port Configuration
+- Frontend: http://localhost:3003
+- Backend API: http://localhost:3004
+
+## Database Setup
+Update the database configuration in `server/db.cjs`:
+```javascript
+const pool = mysql.createPool({
+  host: 'localhost',
+  port: 3306,
+  user: 'your_username',
+  password: 'your_password',
+  database: 'your_database',
+  // ... other settings
+});
