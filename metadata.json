@@ -1,0 +1,5 @@
+{
+  "name": "HealthTrack QC Dashboard",
+  "description": "A comprehensive dashboard for monitoring Service Profile and CQI document submissions across healthcare departments and teams.",
+  "requestFramePermissions": []
+}
