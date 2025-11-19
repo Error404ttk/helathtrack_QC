@@ -20,6 +20,17 @@ export default defineConfig(({ mode }) => {
           }
         }
       },
+      preview: {
+        // Ensure API calls proxy correctly when running `vite preview` (defaults to port 4173)
+        proxy: {
+          '/api': {
+            target: 'http://localhost:3004',
+            changeOrigin: true,
+            secure: false,
+            rewrite: (path) => path.replace(/^\/api/, '/api')
+          }
+        }
+      },
       plugins: [react()],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
