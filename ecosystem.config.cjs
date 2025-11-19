@@ -3,6 +3,7 @@ module.exports = {
     {
       name   : "healthtrack-api",
       script : "./server/index.cjs",
+      cwd    : ".",
       instances: 1,
       autorestart: true,
       watch: false,
