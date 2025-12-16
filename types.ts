@@ -17,8 +17,12 @@ export interface Team {
   category: TeamCategory; // New field
   serviceProfileStatus: DocStatus;
   cqiStatus: DocStatus;
+  cqiSubmittedCount?: number;
+  cqiColor?: string | null;
   lastUpdated: string;
 }
+
+import React from 'react';
 
 export type ViewMode = 'DASHBOARD' | 'ENTRY';
 

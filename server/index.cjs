@@ -57,7 +57,9 @@ app.get('/api/teams', async (req, res) => {
         name, 
         category, 
         service_profile_status as serviceProfileStatus, 
-        cqi_status as cqiStatus, 
+        cqi_status as cqiStatus,
+        cqi_submitted_count as cqiSubmittedCount,
+        cqi_color as cqiColor,
         last_updated as lastUpdated 
       FROM teams 
       ORDER BY last_updated DESC
@@ -73,8 +75,8 @@ app.post('/api/teams', async (req, res) => {
   const id = `t${Date.now()}`;
   try {
     await db.query(
-      'INSERT INTO teams (id, department_id, name, category, service_profile_status, cqi_status) VALUES (?, ?, ?, ?, ?, ?)',
-      [id, departmentId, name, category, 'PENDING', 'PENDING']
+      'INSERT INTO teams (id, department_id, name, category, service_profile_status, cqi_status, cqi_submitted_count) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [id, departmentId, name, category, 'PENDING', 'PENDING', 0]
     );
     // Return the created object matching frontend structure
     res.json({
@@ -84,6 +86,8 @@ app.post('/api/teams', async (req, res) => {
       category,
       serviceProfileStatus: 'PENDING',
       cqiStatus: 'PENDING',
+      cqiSubmittedCount: 0,
+      cqiColor: null,
       lastUpdated: new Date().toISOString()
     });
   } catch (err) {
@@ -94,11 +98,25 @@ app.post('/api/teams', async (req, res) => {
 app.put('/api/teams/:id/status', async (req, res) => {
   const { id } = req.params;
   const { type, status } = req.body; // type: 'SP' or 'CQI', status: 'SUBMITTED' or 'PENDING'
-  
+
   let column = type === 'SP' ? 'service_profile_status' : 'cqi_status';
-  
+
   try {
     await db.query(`UPDATE teams SET ${column} = ? WHERE id = ?`, [status, id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/teams/:id/cqi-info', async (req, res) => {
+  const { id } = req.params;
+  const { cqiSubmittedCount, cqiColor } = req.body;
+  try {
+    await db.query(
+      'UPDATE teams SET cqi_submitted_count = ?, cqi_color = ? WHERE id = ?',
+      [cqiSubmittedCount, cqiColor, id]
+    );
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -110,6 +128,33 @@ app.delete('/api/teams/:id', async (req, res) => {
   try {
     await db.query('DELETE FROM teams WHERE id = ?', [id]);
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- SETTINGS ---
+app.get('/api/settings/:key', async (req, res) => {
+  const { key } = req.params;
+  try {
+    const [rows] = await db.query('SELECT setting_value FROM settings WHERE setting_key = ?', [key]);
+    const value = rows.length > 0 ? rows[0].setting_value : null;
+    res.json({ value });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/settings/:key', async (req, res) => {
+  const { key } = req.params;
+  const { value } = req.body;
+  try {
+    await db.query(`
+      INSERT INTO settings (setting_key, setting_value) 
+      VALUES (?, ?) 
+      ON DUPLICATE KEY UPDATE setting_value = ?
+    `, [key, value, value]);
+    res.json({ success: true, value });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

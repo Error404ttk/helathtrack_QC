@@ -12,7 +12,7 @@ const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('DASHBOARD');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  
+
   const [departments, setDepartments] = useState<Department[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
 
@@ -66,11 +66,11 @@ const App: React.FC = () => {
     if (category === 'FA_TEAM' && !finalDeptId) {
       const defaultFAName = "คณะกรรมการ/ทีมนำทาง";
       let faDept = departments.find(d => d.name === defaultFAName);
-      
+
       if (!faDept) {
         // Create default dept via API
         try {
-           const res = await fetch(`${API_URL}/departments`, {
+          const res = await fetch(`${API_URL}/departments`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: defaultFAName })
@@ -102,7 +102,7 @@ const App: React.FC = () => {
         setTeams(prev => [newTeam, ...prev]); // Add to top
       }
     } catch (error) {
-       console.error("Error adding team", error);
+      console.error("Error adding team", error);
     }
   };
 
@@ -145,7 +145,28 @@ const App: React.FC = () => {
         }));
       }
     } catch (error) {
-       console.error("Error updating status", error);
+      console.error("Error updating status", error);
+    }
+  };
+
+  const updateCqiInfo = async (teamId: string, count: number, color: string | null) => {
+    try {
+      const res = await fetch(`${API_URL}/teams/${teamId}/cqi-info`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cqiSubmittedCount: count, cqiColor: color })
+      });
+
+      if (res.ok) {
+        setTeams(prev => prev.map(t => {
+          if (t.id === teamId) {
+            return { ...t, cqiSubmittedCount: count, cqiColor: color };
+          }
+          return t;
+        }));
+      }
+    } catch (error) {
+      console.error("Error updating CQI info", error);
     }
   };
 
@@ -156,30 +177,28 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Header />
-      
+
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+
         {/* View Switcher */}
         <div className="flex justify-center mb-8">
           <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 inline-flex">
-            <button 
+            <button
               onClick={() => setViewMode('DASHBOARD')}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                viewMode === 'DASHBOARD' 
-                ? 'bg-emerald-600 text-white shadow-md' 
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${viewMode === 'DASHBOARD'
+                ? 'bg-emerald-600 text-white shadow-md'
                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}
+                }`}
             >
               <LayoutDashboard className="w-4 h-4" />
               Dashboard ภาพรวม
             </button>
-            <button 
+            <button
               onClick={() => setViewMode('ENTRY')}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                viewMode === 'ENTRY' 
-                ? 'bg-emerald-600 text-white shadow-md' 
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${viewMode === 'ENTRY'
+                ? 'bg-emerald-600 text-white shadow-md'
                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}
+                }`}
             >
               <PenTool className="w-4 h-4" />
               จัดการข้อมูล
@@ -194,18 +213,19 @@ const App: React.FC = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
             </div>
           ) : (
-             viewMode === 'DASHBOARD' ? (
+            viewMode === 'DASHBOARD' ? (
               <Dashboard departments={departments} teams={teams} onRefresh={handleRefresh} />
             ) : (
               !isAuthenticated ? (
                 <Login onLogin={() => setIsAuthenticated(true)} />
               ) : (
-                <DataEntry 
-                  departments={departments} 
-                  teams={teams} 
+                <DataEntry
+                  departments={departments}
+                  teams={teams}
                   onAddDepartment={addDepartment}
                   onAddTeam={addTeam}
                   onUpdateStatus={updateStatus}
+                  onUpdateCqiInfo={updateCqiInfo}
                   onDeleteTeam={deleteTeam}
                   onLogout={() => setIsAuthenticated(false)}
                 />
@@ -215,7 +235,7 @@ const App: React.FC = () => {
         </div>
 
       </main>
-      
+
       <footer className="bg-slate-900 text-slate-400 py-6 text-center text-sm">
         <p>© 2024 HealthTrack QC System. Database Connected.</p>
       </footer>
