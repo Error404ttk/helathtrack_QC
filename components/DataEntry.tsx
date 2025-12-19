@@ -128,9 +128,22 @@ export const DataEntry: React.FC<DataEntryProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <div className="hidden md:block text-right mr-2">
-            <p className="text-xs text-slate-400">รายการทั้งหมด</p>
-            <p className="text-xl font-bold text-white">{teams.length} <span className="text-xs font-normal text-slate-400">ทีม</span></p>
+          <div className="hidden md:flex items-center gap-4 text-right mr-2">
+            <div>
+              <p className="text-xs text-slate-400">หน่วยงาน (Unit)</p>
+              <p className="text-xl font-bold text-white">
+                {teams.filter(t => t.category === 'DEPARTMENT').length}
+                <span className="text-xs font-normal text-slate-400 ml-1">ทีม</span>
+              </p>
+            </div>
+            <div className="h-8 w-px bg-slate-700"></div>
+            <div>
+              <p className="text-xs text-slate-400">ทีม FA (PCT)</p>
+              <p className="text-xl font-bold text-white">
+                {teams.filter(t => t.category === 'FA_TEAM').length}
+                <span className="text-xs font-normal text-slate-400 ml-1">ทีม</span>
+              </p>
+            </div>
           </div>
           <button
             onClick={onLogout}
@@ -312,6 +325,7 @@ export const DataEntry: React.FC<DataEntryProps> = ({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-100/50 border-b border-slate-200">
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center w-16">ลำดับ</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">ประเภท</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">สังกัด (Dept)</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">ชื่อทีม (Team Name)</th>
@@ -324,122 +338,166 @@ export const DataEntry: React.FC<DataEntryProps> = ({
             <tbody className="divide-y divide-slate-100">
               {filteredTeams.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center flex flex-col items-center justify-center text-slate-400 gap-2">
+                  <td colSpan={8} className="px-6 py-16 text-center flex flex-col items-center justify-center text-slate-400 gap-2">
                     <Search className="w-8 h-8 opacity-20" />
                     <span>ไม่พบข้อมูลทีมในเงื่อนไขที่เลือก</span>
                   </td>
                 </tr>
               )}
-              {filteredTeams.map((team) => {
-                const deptName = departments.find(d => d.id === team.departmentId)?.name || 'Unknown';
-                const isFATeam = team.category === 'FA_TEAM';
 
-                return (
-                  <tr key={team.id} className={`hover:bg-slate-50 transition-colors group ${isFATeam ? 'bg-amber-50/10' : ''}`}>
-                    <td className="px-6 py-4">
-                      {isFATeam ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-700 text-[10px] rounded-full font-bold border border-amber-200">
-                          <Users className="w-3 h-3" /> FA Team
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 text-emerald-700 text-[10px] rounded-full font-bold border border-emerald-200">
-                          <Briefcase className="w-3 h-3" /> Unit
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-500 font-normal">{deptName}</td>
-                    <td className="px-6 py-4 text-sm text-slate-900 font-medium">{team.name}</td>
+              {(() => {
+                const units = filteredTeams.filter(t => t.category === 'DEPARTMENT');
+                const faTeams = filteredTeams.filter(t => t.category === 'FA_TEAM');
+                const showBoth = filterCategory === 'ALL' && units.length > 0 && faTeams.length > 0;
 
-                    {/* Service Profile Toggle */}
-                    <td className="px-6 py-4 text-center">
-                      {isFATeam ? (
-                        <span className="text-slate-300 text-xs italic bg-slate-50 px-2 py-1 rounded">N/A</span>
-                      ) : (
+                const renderRow = (team: Team, index: number) => {
+                  const deptName = departments.find(d => d.id === team.departmentId)?.name || 'Unknown';
+                  const isFATeam = team.category === 'FA_TEAM';
+
+                  return (
+                    <tr key={team.id} className={`hover:bg-slate-50 transition-colors group ${isFATeam ? 'bg-amber-50/10' : ''}`}>
+                      <td className="px-6 py-4 text-center text-sm text-slate-500 font-medium">{index + 1}</td>
+                      <td className="px-6 py-4">
+                        {isFATeam ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-700 text-[10px] rounded-full font-bold border border-amber-200">
+                            <Users className="w-3 h-3" /> FA Team
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 text-emerald-700 text-[10px] rounded-full font-bold border border-emerald-200">
+                            <Briefcase className="w-3 h-3" /> Unit
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500 font-normal">{deptName}</td>
+                      <td className="px-6 py-4 text-sm text-slate-900 font-medium">{team.name}</td>
+
+                      {/* Service Profile Toggle */}
+                      <td className="px-6 py-4 text-center">
+                        {isFATeam ? (
+                          <span className="text-slate-300 text-xs italic bg-slate-50 px-2 py-1 rounded">N/A</span>
+                        ) : (
+                          <button
+                            onClick={() => onUpdateStatus(team.id, 'SP')}
+                            className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-bold border transition-all duration-200 shadow-sm hover:shadow ${team.serviceProfileStatus === DocStatus.SUBMITTED
+                              ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
+                              : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                              }`}
+                          >
+                            {team.serviceProfileStatus === DocStatus.SUBMITTED ? (
+                              <>
+                                <FileCheck className="w-3 h-3 mr-1" /> ส่งแล้ว
+                              </>
+                            ) : 'ยังไม่ส่ง'}
+                          </button>
+                        )}
+                      </td>
+
+                      {/* CQI Toggle */}
+                      <td className="px-6 py-4 text-center">
                         <button
-                          onClick={() => onUpdateStatus(team.id, 'SP')}
-                          className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-bold border transition-all duration-200 shadow-sm hover:shadow ${team.serviceProfileStatus === DocStatus.SUBMITTED
+                          onClick={() => onUpdateStatus(team.id, 'CQI')}
+                          className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-bold border transition-all duration-200 shadow-sm hover:shadow ${team.cqiStatus === DocStatus.SUBMITTED
                             ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
                             : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
                             }`}
                         >
-                          {team.serviceProfileStatus === DocStatus.SUBMITTED ? (
+                          {team.cqiStatus === DocStatus.SUBMITTED ? (
                             <>
                               <FileCheck className="w-3 h-3 mr-1" /> ส่งแล้ว
                             </>
                           ) : 'ยังไม่ส่ง'}
                         </button>
-                      )}
-                    </td>
+                      </td>
 
-                    {/* CQI Toggle */}
-                    <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => onUpdateStatus(team.id, 'CQI')}
-                        className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-bold border transition-all duration-200 shadow-sm hover:shadow ${team.cqiStatus === DocStatus.SUBMITTED
-                          ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
-                          : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
-                          }`}
-                      >
-                        {team.cqiStatus === DocStatus.SUBMITTED ? (
-                          <>
-                            <FileCheck className="w-3 h-3 mr-1" /> ส่งแล้ว
-                          </>
-                        ) : 'ยังไม่ส่ง'}
-                      </button>
-                    </td>
-
-                    {/* CQI Count & Color (New Feature) */}
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            className="w-16 px-2 py-1 border border-slate-300 rounded text-center text-sm focus:ring-emerald-500 focus:border-emerald-500"
-                            placeholder="0"
-                            defaultValue={team.cqiSubmittedCount || 0}
-                            onBlur={(e) => {
-                              if (onUpdateCqiInfo) {
-                                const val = parseInt(e.target.value, 10);
-                                onUpdateCqiInfo(team.id, isNaN(val) ? 0 : val, team.cqiColor || null);
-                              }
-                            }}
-                          />
-                          <div className="relative group">
-                            <button className={`w-6 h-6 rounded-full border shadow-sm ${team.cqiColor ? '' : 'bg-white'}`} style={{ backgroundColor: team.cqiColor || '#ffffff' }} />
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 hidden group-hover:flex bg-white p-2 rounded-lg shadow-xl border border-slate-200 gap-1 z-10 w-max">
-                              {['#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', null].map((color) => (
-                                <button
-                                  key={color || 'none'}
-                                  className={`w-6 h-6 rounded-full border hover:scale-110 transition-transform ${color === null ? 'bg-white relative overflow-hidden' : ''}`}
-                                  style={{ backgroundColor: color || '#ffffff' }}
-                                  onClick={() => {
-                                    if (onUpdateCqiInfo) {
-                                      onUpdateCqiInfo(team.id, team.cqiSubmittedCount || 0, color);
-                                    }
-                                  }}
-                                >
-                                  {color === null && <div className="absolute inset-0 border-r border-red-500 transform rotate-45"></div>}
-                                </button>
-                              ))}
+                      {/* CQI Count & Color (New Feature) */}
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              className="w-16 px-2 py-1 border border-slate-300 rounded text-center text-sm focus:ring-emerald-500 focus:border-emerald-500"
+                              placeholder="0"
+                              defaultValue={team.cqiSubmittedCount || 0}
+                              onBlur={(e) => {
+                                if (onUpdateCqiInfo) {
+                                  const val = parseInt(e.target.value, 10);
+                                  onUpdateCqiInfo(team.id, isNaN(val) ? 0 : val, team.cqiColor || null);
+                                }
+                              }}
+                            />
+                            <div className="relative group">
+                              <button className={`w-6 h-6 rounded-full border shadow-sm ${team.cqiColor ? '' : 'bg-white'}`} style={{ backgroundColor: team.cqiColor || '#ffffff' }} />
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 hidden group-hover:flex bg-white p-2 rounded-lg shadow-xl border border-slate-200 gap-1 z-10 w-max">
+                                {['#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', null].map((color) => (
+                                  <button
+                                    key={color || 'none'}
+                                    className={`w-6 h-6 rounded-full border hover:scale-110 transition-transform ${color === null ? 'bg-white relative overflow-hidden' : ''}`}
+                                    style={{ backgroundColor: color || '#ffffff' }}
+                                    onClick={() => {
+                                      if (onUpdateCqiInfo) {
+                                        onUpdateCqiInfo(team.id, team.cqiSubmittedCount || 0, color);
+                                      }
+                                    }}
+                                  >
+                                    {color === null && <div className="absolute inset-0 border-r border-red-500 transform rotate-45"></div>}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
                           </div>
+                          <span className="text-[10px] text-slate-400">ระบุจำนวน & สี</span>
                         </div>
-                        <span className="text-[10px] text-slate-400">ระบุจำนวน & สี</span>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => initiateDelete(team.id)}
-                        className="text-slate-300 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50 group-hover:text-slate-400"
-                        title="ลบทีม"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => initiateDelete(team.id)}
+                          className="text-slate-300 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50 group-hover:text-slate-400"
+                          title="ลบทีม"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                };
+
+                return (
+                  <>
+                    {/* Units Section */}
+                    {units.length > 0 && (
+                      <>
+                        {showBoth && (
+                          <tr className="bg-slate-50 border-b border-slate-200">
+                            <td colSpan={8} className="px-6 py-3 font-bold text-slate-700 flex items-center gap-2">
+                              <Briefcase className="w-4 h-4 text-emerald-600" />
+                              รายชื่อหน่วยงาน (Units)
+                              <span className="text-xs font-normal text-slate-500 ml-2">({units.length} ทีม)</span>
+                            </td>
+                          </tr>
+                        )}
+                        {units.map((team, index) => renderRow(team, index))}
+                      </>
+                    )}
+
+                    {/* FA Teams Section */}
+                    {faTeams.length > 0 && (
+                      <>
+                        {showBoth && (
+                          <tr className="bg-amber-50/50 border-b border-amber-100">
+                            <td colSpan={8} className="px-6 py-3 font-bold text-slate-700 flex items-center gap-2 mt-4">
+                              <Users className="w-4 h-4 text-amber-600" />
+                              รายชื่อทีม FA (PCT Teams)
+                              <span className="text-xs font-normal text-slate-500 ml-2">({faTeams.length} ทีม)</span>
+                            </td>
+                          </tr>
+                        )}
+                        {faTeams.map((team, index) => renderRow(team, index))}
+                      </>
+                    )}
+                  </>
                 );
-              })}
+              })()}
             </tbody>
           </table>
         </div>

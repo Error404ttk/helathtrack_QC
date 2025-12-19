@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Department, Team, DocStatus } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { CheckCircle, AlertCircle, FileText, Users, RotateCcw, Award, Target, Activity, CheckCircle2, X, Edit2, Save, Shield } from 'lucide-react';
+import { CheckCircle, AlertCircle, FileText, Users, RotateCcw, Award, Target, Activity, CheckCircle2, X, Edit2, Save, Shield, Search } from 'lucide-react';
 
 interface DashboardProps {
   departments: Department[];
@@ -15,6 +15,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
   const [manualCqiCount, setManualCqiCount] = useState<number | null>(null);
   const [isEditingCqi, setIsEditingCqi] = useState(false);
   const [tempCqiVal, setTempCqiVal] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchSettings = async () => {
     try {
@@ -155,7 +156,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
       displayStatus: team.cqiStatus === DocStatus.SUBMITTED ? 'ส่งแล้ว' : 'ยังไม่ส่ง'
     }))
     .sort((a, b) => b.rate - a.rate)
+
     .slice(0, 10); // Limit to top 10
+
+  const filteredTeams = useMemo(() => {
+    if (!searchTerm.trim()) return teams;
+    const term = searchTerm.toLowerCase();
+    return teams.filter(team => {
+      const deptName = departments.find(d => d.id === team.departmentId)?.name || '';
+      return team.name.toLowerCase().includes(term) || deptName.toLowerCase().includes(term);
+    });
+  }, [teams, searchTerm, departments]);
 
   return (
     <div className="space-y-8 animate-fade-in relative">
@@ -190,6 +201,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
           <RotateCcw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-emerald-600' : ''}`} />
           <span className="font-medium text-sm">{isRefreshing ? 'กำลังอัปเดต...' : 'รีเฟรชข้อมูล'}</span>
         </button>
+      </div>
+
+      {/* Search Bar */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-slate-400" />
+          </div>
+          <input
+            type="text"
+            className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-500 focus:outline-none focus:placeholder-slate-400 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition-colors"
+            placeholder="ค้นหาชื่อหน่วยงาน หรือ กลุ่มงาน..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -281,7 +308,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
         <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <div className="bg-blue-500 w-1 h-6 rounded-r"></div>
-            <h3 className="text-lg font-bold text-slate-800">ติดตามสถานะ: หน่วยงาน</h3>
+            <h3 className="text-lg font-bold text-slate-800">ติดตามสถานะ: หน่วยงาน <span className="text-slate-500 text-sm font-normal">({stats.totalUnits} ทีม)</span></h3>
           </div>
           <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold border border-blue-100">
             เป้าหมาย: Service Profile + CQI
@@ -291,6 +318,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-white text-slate-600 text-sm font-semibold border-b border-slate-200">
+                <th className="px-6 py-4 w-12 text-center text-slate-400">#</th>
                 <th className="px-6 py-4 w-1/4">กลุ่มงาน/ฝ่าย</th>
                 <th className="px-6 py-4 w-1/4">หน่วยงาน</th>
                 <th className="px-6 py-4 text-center">Service Profile</th>
@@ -299,8 +327,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
                 <th className="px-6 py-4 text-right">สถานะรวม</th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-slate-100">
-              {teams.filter(t => t.category === 'DEPARTMENT').map((team) => {
+              {filteredTeams.filter(t => t.category === 'DEPARTMENT').map((team, index) => {
                 const deptName = departments.find(d => d.id === team.departmentId)?.name || 'Unknown';
                 const isSpDone = team.serviceProfileStatus === DocStatus.SUBMITTED;
                 const isCqiDone = team.cqiStatus === DocStatus.SUBMITTED;
@@ -308,6 +337,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
 
                 return (
                   <tr key={team.id} className="hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 text-sm">
+                    <td className="px-6 py-4 text-center text-slate-400 text-xs font-mono">{index + 1}</td>
                     <td className="px-6 py-4 text-slate-500">{deptName}</td>
                     <td className="px-6 py-4 text-slate-800 font-medium">{team.name}</td>
 
@@ -362,20 +392,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
                   </tr>
                 );
               })}
-              {teams.filter(t => t.category === 'DEPARTMENT').length === 0 && (
-                <tr><td colSpan={5} className="text-center py-8 text-slate-400">ไม่มีข้อมูลหน่วยงาน</td></tr>
+              {filteredTeams.filter(t => t.category === 'DEPARTMENT').length === 0 && (
+                <tr><td colSpan={7} className="text-center py-8 text-slate-400">
+                  {searchTerm ? 'ไม่พบข้อมูลที่ค้นหา' : 'ไม่มีข้อมูลหน่วยงาน'}
+                </td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
 
+
       {/* SECTION 2: FA Teams Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <div className="bg-amber-500 w-1 h-6 rounded-r"></div>
-            <h3 className="text-lg font-bold text-slate-800">ติดตามสถานะ: ทีมFA</h3>
+            <h3 className="text-lg font-bold text-slate-800">ติดตามสถานะ: ทีมFA <span className="text-slate-500 text-sm font-normal">({stats.totalFATeams} ทีม)</span></h3>
           </div>
           <span className="px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-semibold border border-amber-100">
             เป้าหมาย: CQI เท่านั้น
@@ -385,6 +418,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-white text-slate-600 text-sm font-semibold border-b border-slate-200">
+                <th className="px-6 py-4 w-12 text-center text-slate-400">#</th>
                 <th className="px-6 py-4 w-1/4">สังกัด/ผู้รับผิดชอบ</th>
                 <th className="px-6 py-4 w-1/4">ชื่อทีม FA/PCT</th>
                 <th className="px-6 py-4 text-center bg-slate-50/50 text-slate-400">Service Profile</th>
@@ -393,14 +427,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
                 <th className="px-6 py-4 text-right">สถานะรวม</th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-slate-100">
-              {teams.filter(t => t.category === 'FA_TEAM').map((team) => {
+              {filteredTeams.filter(t => t.category === 'FA_TEAM').map((team, index) => {
                 const deptName = departments.find(d => d.id === team.departmentId)?.name || 'Unknown';
                 const isComplete = team.cqiStatus === DocStatus.SUBMITTED;
                 const isCqiDone = team.cqiStatus === DocStatus.SUBMITTED;
 
                 return (
                   <tr key={team.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 text-center text-slate-400 text-xs font-mono">{index + 1}</td>
                     <td className="px-6 py-4 text-sm text-slate-500">{deptName}</td>
                     <td className="px-6 py-4 text-sm font-medium text-slate-900">{team.name}</td>
                     <td className="px-6 py-4 text-center bg-slate-50/50">
@@ -449,19 +485,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
                   </tr>
                 );
               })}
-              {teams.filter(t => t.category === 'FA_TEAM').length === 0 && (
-                <tr><td colSpan={5} className="text-center py-8 text-slate-400">ไม่มีข้อมูลทีม FA</td></tr>
+              {filteredTeams.filter(t => t.category === 'FA_TEAM').length === 0 && (
+                <tr><td colSpan={7} className="text-center py-8 text-slate-400">
+                  {searchTerm ? 'ไม่พบข้อมูลที่ค้นหา' : 'ไม่มีข้อมูลทีม FA'}
+                </td></tr>
               )}
             </tbody>
           </table>
-        </div>
-      </div>
+        </div >
+      </div >
 
       {/* Charts Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
+      < div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4" >
 
         {/* Chart 1: Progress by Dept */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+        < div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col" >
           <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
             <Target className="w-5 h-5 text-emerald-600" />
             อันดับการส่งงาน (หน่วยงาน)
@@ -480,10 +518,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </div >
 
         {/* Chart 2: Progress by FA Team */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+        < div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col" >
           <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
             <Award className="w-5 h-5 text-amber-600" />
             อันดับการส่งงาน (ทีม FA)
@@ -507,10 +545,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
               <div className="flex items-center justify-center h-full text-slate-400 text-sm">ไม่มีข้อมูลทีม FA</div>
             )}
           </div>
-        </div>
+        </div >
 
         {/* Chart 3: Overall Pie */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center">
+        < div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center" >
           <h3 className="text-lg font-bold text-slate-800 mb-2">ภาพรวมทั้งองค์กร</h3>
           <div className="h-[200px] w-full relative">
             <ResponsiveContainer width="100%" height="100%">
@@ -549,8 +587,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
               <span className="text-slate-600">รอดำเนินการ</span>
             </div>
           </div>
-        </div>
-      </div>
+        </div >
+      </div >
 
       <style>{`
         @keyframes slide-in-right {
@@ -561,7 +599,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
           animation: slide-in-right 0.3s ease-out forwards;
         }
       `}</style>
-    </div>
+    </div >
   );
 };
 
