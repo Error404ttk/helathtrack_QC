@@ -4,6 +4,8 @@ import { Dashboard } from './components/Dashboard';
 import { DataEntry } from './components/DataEntry';
 import { Login } from './components/Login';
 import { UserManagement } from './components/UserManagement';
+import { ChangelogModal } from './components/ChangelogModal';
+import { getLatestVersion } from './src/data/changelog';
 import { Department, Team, DocStatus, TeamCategory, User, ViewMode } from './types';
 import { LayoutDashboard, PenTool, Users, X, Shield, Activity } from 'lucide-react';
 
@@ -315,7 +317,7 @@ const App: React.FC = () => {
 
       <footer className="bg-slate-900 text-slate-400 py-8 text-center text-sm border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 flex flex-col items-center gap-2">
-          <p>© 2026 HealthTrack QC System. Version 2.0.0</p>
+          <p>© 2026 HealthTrack QC System. Version {getLatestVersion().version}</p>
           <button
             onClick={() => setShowChangelog(true)}
             className="text-emerald-500 hover:text-emerald-400 hover:underline text-xs flex items-center gap-1 transition-colors"
@@ -331,59 +333,6 @@ const App: React.FC = () => {
   );
 };
 
-const ChangelogModal: React.FC<{ onClose: () => void }> = ({ onClose }) => (
-  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-scale-in">
-      <div className="p-6">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              🎉 What's New
-              <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">v2.0.0</span>
-            </h3>
-            <p className="text-slate-500 text-sm mt-1">อัปเดตล่าสุด: 28 ม.ค. 2026</p>
-          </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
-        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <h4 className="font-semibold text-slate-700 mb-2 flex items-center gap-2">
-              <Shield className="w-4 h-4 text-emerald-600" />
-              Security Improvements
-            </h4>
-            <ul className="text-sm text-slate-600 space-y-2 list-disc list-inside ml-1">
-              <li>เพิ่มระบบป้องกันการเข้าถึงไฟล์ (Unauthorized Access Prevention)</li>
-              <li>ปรับปรุง Popup แจ้งเตือนเมื่อไม่มีสิทธิ์เข้าถึงให้สวยงามและเข้าใจง่าย</li>
-              <li>แก้ไขบั๊ก Authentication ที่ปุ่มเมนูค้างหลัง Logout</li>
-            </ul>
-          </div>
-
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <h4 className="font-semibold text-slate-700 mb-2 flex items-center gap-2">
-              <LayoutDashboard className="w-4 h-4 text-blue-600" />
-              UI/UX Enhancements
-            </h4>
-            <ul className="text-sm text-slate-600 space-y-2 list-disc list-inside ml-1">
-              <li>ปรับดีไซน์ Footer ใหม่ (Version 2)</li>
-              <li>เพิ่มหน้า Changelog เพื่อแจ้งข่าวสารการอัปเดต</li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200"
-          >
-            ปิดหน้าต่าง
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-);
 
 export default App;
