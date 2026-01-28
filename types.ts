@@ -19,12 +19,21 @@ export interface Team {
   cqiStatus: DocStatus;
   cqiSubmittedCount?: number;
   cqiColor?: string | null;
+  serviceProfileFile?: string | null;
+  cqiFile?: string | null;
   lastUpdated: string;
+}
+
+export interface User {
+  id: number;
+  username: string;
+  role: 'ADMIN' | 'USER';
+  created_at?: string;
 }
 
 import React from 'react';
 
-export type ViewMode = 'DASHBOARD' | 'ENTRY';
+export type ViewMode = 'DASHBOARD' | 'ENTRY' | 'USERS';
 
 export interface StatCardProps {
   title: string;

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+
+import React, { useState, useRef } from 'react';
 import { Department, Team, DocStatus, TeamCategory } from '../types';
-import { Plus, Trash2, FileCheck, UploadCloud, Building2, Users, LogOut, Shield, Briefcase, AlertTriangle, X, Filter, Search, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, FileCheck, UploadCloud, Building2, Users, LogOut, Shield, Briefcase, AlertTriangle, X, Filter, Search, CheckCircle2, FileText, Download, Paperclip } from 'lucide-react';
 
 interface DataEntryProps {
   departments: Department[];
@@ -9,6 +10,7 @@ interface DataEntryProps {
   onAddTeam: (deptId: string | null, name: string, category: TeamCategory) => void;
   onUpdateStatus: (teamId: string, type: 'SP' | 'CQI') => void;
   onUpdateCqiInfo?: (teamId: string, count: number, color: string | null) => Promise<void>;
+  onUpdateFile?: (teamId: string, type: 'SP' | 'CQI', filename: string | null) => Promise<void>;
   onDeleteTeam: (teamId: string) => void;
   onLogout: () => void;
 }
@@ -20,6 +22,7 @@ export const DataEntry: React.FC<DataEntryProps> = ({
   onAddTeam,
   onUpdateStatus,
   onUpdateCqiInfo,
+  onUpdateFile,
   onDeleteTeam,
   onLogout
 }) => {
@@ -35,6 +38,14 @@ export const DataEntry: React.FC<DataEntryProps> = ({
   // Delete Modal State
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<string | null>(null);
+
+  // Upload Modal State
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [uploadTeamId, setUploadTeamId] = useState<string | null>(null);
+  const [uploadType, setUploadType] = useState<'SP' | 'CQI'>('SP');
+  const [fileToUpload, setFileToUpload] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Notification State
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
@@ -63,7 +74,6 @@ export const DataEntry: React.FC<DataEntryProps> = ({
       onAddTeam(isDeptRequired ? selectedDeptId : null, newTeamName, selectedCategory);
       setNewTeamName('');
       showNotification(`เพิ่ม${selectedCategory === 'FA_TEAM' ? 'ทีม FA' : 'หน่วยงาน'}สำเร็จ`);
-      // We don't reset dept/category to allow rapid entry
     }
   };
 
@@ -84,6 +94,60 @@ export const DataEntry: React.FC<DataEntryProps> = ({
   const cancelDelete = () => {
     setIsDeleteModalOpen(false);
     setTeamToDelete(null);
+  };
+
+  // Upload Handlers
+  const openUploadModal = (teamId: string, type: 'SP' | 'CQI') => {
+    setUploadTeamId(teamId);
+    setUploadType(type);
+    setFileToUpload(null);
+    setIsUploadModalOpen(true);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFileToUpload(e.target.files[0]);
+    }
+  };
+
+  const handleUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fileToUpload || !uploadTeamId || !onUpdateFile) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', fileToUpload);
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        await onUpdateFile(uploadTeamId, uploadType, data.filename);
+        showNotification('อัปโหลดไฟล์สำเร็จ');
+        setIsUploadModalOpen(false);
+      } else {
+        const err = await res.json();
+        showNotification(err.error || 'อัปโหลดล้มเหลว', 'error');
+      }
+    } catch (error) {
+      showNotification('เกิดข้อผิดพลาดในการอัปโหลด', 'error');
+    } finally {
+      setIsUploading(false);
+      setFileToUpload(null);
+    }
+  };
+
+  const handleDeleteFile = async (teamId: string, type: 'SP' | 'CQI') => {
+    if (confirm('คุณต้องการลบไฟล์นี้ใช่หรือไม่?')) {
+      if (onUpdateFile) {
+        await onUpdateFile(teamId, type, null);
+        showNotification('ลบไฟล์สำเร็จ');
+      }
+    }
   };
 
   const filteredTeams = teams.filter(t => {
@@ -376,37 +440,111 @@ export const DataEntry: React.FC<DataEntryProps> = ({
                         {isFATeam ? (
                           <span className="text-slate-300 text-xs italic bg-slate-50 px-2 py-1 rounded">N/A</span>
                         ) : (
-                          <button
-                            onClick={() => onUpdateStatus(team.id, 'SP')}
-                            className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-bold border transition-all duration-200 shadow-sm hover:shadow ${team.serviceProfileStatus === DocStatus.SUBMITTED
-                              ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
-                              : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
-                              }`}
-                          >
-                            {team.serviceProfileStatus === DocStatus.SUBMITTED ? (
-                              <>
-                                <FileCheck className="w-3 h-3 mr-1" /> ส่งแล้ว
-                              </>
-                            ) : 'ยังไม่ส่ง'}
-                          </button>
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => onUpdateStatus(team.id, 'SP')}
+                              className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-bold border transition-all duration-200 shadow-sm hover:shadow ${team.serviceProfileStatus === DocStatus.SUBMITTED
+                                ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
+                                : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                                }`}
+                            >
+                              {team.serviceProfileStatus === DocStatus.SUBMITTED ? (
+                                <>
+                                  <FileCheck className="w-3 h-3 mr-1" /> ส่งแล้ว
+                                </>
+                              ) : 'ยังไม่ส่ง'}
+                            </button>
+                            {team.serviceProfileFile ? (
+                              <div className="flex items-center bg-slate-100 rounded-full px-1 border border-slate-200">
+                                <a
+                                  href={`/api/uploads/${team.serviceProfileFile}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1.5 text-blue-600 hover:bg-white hover:scale-110 rounded-full transition-all"
+                                  title="ดาวน์โหลด (SP)"
+                                >
+                                  <Paperclip className="w-3.5 h-3.5" />
+                                </a>
+                                <button
+                                  onClick={() => openUploadModal(team.id, 'SP')}
+                                  className="p-1.5 text-amber-600 hover:bg-white hover:scale-110 rounded-full transition-all"
+                                  title="แก้ไขไฟล์ (SP)"
+                                >
+                                  <div className="w-3.5 h-3.5 border-2 border-current rounded-full flex items-center justify-center text-[8px] font-bold">/</div>
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteFile(team.id, 'SP')}
+                                  className="p-1.5 text-red-500 hover:bg-white hover:scale-110 rounded-full transition-all"
+                                  title="ลบไฟล์ (SP)"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => openUploadModal(team.id, 'SP')}
+                                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-emerald-600 transition-colors"
+                                title="แนบเอกสาร (SP)"
+                              >
+                                <UploadCloud className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
                         )}
                       </td>
 
                       {/* CQI Toggle */}
                       <td className="px-6 py-4 text-center">
-                        <button
-                          onClick={() => onUpdateStatus(team.id, 'CQI')}
-                          className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-bold border transition-all duration-200 shadow-sm hover:shadow ${team.cqiStatus === DocStatus.SUBMITTED
-                            ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
-                            : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
-                            }`}
-                        >
-                          {team.cqiStatus === DocStatus.SUBMITTED ? (
-                            <>
-                              <FileCheck className="w-3 h-3 mr-1" /> ส่งแล้ว
-                            </>
-                          ) : 'ยังไม่ส่ง'}
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => onUpdateStatus(team.id, 'CQI')}
+                            className={`relative inline-flex items-center justify-center px-4 py-1.5 rounded-full text-xs font-bold border transition-all duration-200 shadow-sm hover:shadow ${team.cqiStatus === DocStatus.SUBMITTED
+                              ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
+                              : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                              }`}
+                          >
+                            {team.cqiStatus === DocStatus.SUBMITTED ? (
+                              <>
+                                <FileCheck className="w-3 h-3 mr-1" /> ส่งแล้ว
+                              </>
+                            ) : 'ยังไม่ส่ง'}
+                          </button>
+                          {team.cqiFile ? (
+                            <div className="flex items-center bg-slate-100 rounded-full px-1 border border-slate-200">
+                              <a
+                                href={`/api/uploads/${team.cqiFile}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 text-blue-600 hover:bg-white hover:scale-110 rounded-full transition-all"
+                                title="ดาวน์โหลด (CQI)"
+                              >
+                                <Paperclip className="w-3.5 h-3.5" />
+                              </a>
+                              <button
+                                onClick={() => openUploadModal(team.id, 'CQI')}
+                                className="p-1.5 text-amber-600 hover:bg-white hover:scale-110 rounded-full transition-all"
+                                title="แก้ไขไฟล์ (CQI)"
+                              >
+                                <div className="w-3.5 h-3.5 border-2 border-current rounded-full flex items-center justify-center text-[8px] font-bold">/</div>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteFile(team.id, 'CQI')}
+                                className="p-1.5 text-red-500 hover:bg-white hover:scale-110 rounded-full transition-all"
+                                title="ลบไฟล์ (CQI)"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => openUploadModal(team.id, 'CQI')}
+                              className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-emerald-600 transition-colors"
+                              title="แนบเอกสาร (CQI)"
+                            >
+                              <UploadCloud className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </td>
 
                       {/* CQI Count & Color (New Feature) */}
@@ -502,6 +640,78 @@ export const DataEntry: React.FC<DataEntryProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Upload File Modal */}
+      {isUploadModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-scale-in ring-1 ring-white/20">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <UploadCloud className="w-5 h-5 text-emerald-600" />
+                  แนบไฟล์ {uploadType === 'SP' ? 'Service Profile' : 'CQI'}
+                </h3>
+                <button
+                  onClick={() => setIsUploadModalOpen(false)}
+                  className="p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleUploadSubmit} className="space-y-4">
+                <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 transition-colors cursor-pointer group"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-emerald-50">
+                    <FileText className={`w-6 h-6 ${fileToUpload ? 'text-emerald-600' : 'text-slate-400 group-hover:text-emerald-500'}`} />
+                  </div>
+                  {fileToUpload ? (
+                    <p className="text-emerald-600 font-medium text-sm truncate max-w-full px-2">
+                      {fileToUpload.name}
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-slate-600 font-medium text-sm">คลิกเพื่อเลือกไฟล์ PDF</p>
+                      <p className="text-slate-400 text-xs mt-1">รองรับเฉพาะไฟล์ .pdf เท่านั้น</p>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept=".pdf"
+                    className="hidden"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsUploadModalOpen(false)}
+                    className="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors text-sm"
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!fileToUpload || isUploading}
+                    className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md disabled:opacity-50 disabled:shadow-none transition-all text-sm flex items-center justify-center gap-2"
+                  >
+                    {isUploading ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-b-white rounded-full animate-spin"></div>
+                    ) : (
+                      <>
+                        <UploadCloud className="w-4 h-4" /> อัปโหลด
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Custom Delete Confirmation Modal */}
       {isDeleteModalOpen && (

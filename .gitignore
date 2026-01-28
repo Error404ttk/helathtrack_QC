@@ -18,6 +18,7 @@ dist-ssr
 *.sqlite
 *.sqlite3
 server/db.cjs
+uploads/
 
 # PM2 logs and config
 .pm2/

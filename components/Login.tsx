@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Lock, User, KeyRound, ShieldCheck } from 'lucide-react';
 
 interface LoginProps {
-  onLogin: () => void;
+  onLogin: (user: any) => void;
 }
 
 const API_URL = '/api';
@@ -17,7 +17,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-    
+
     try {
       const response = await fetch(`${API_URL}/login`, {
         method: 'POST',
@@ -28,7 +28,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        onLogin();
+        onLogin(data.user);
       } else {
         setError(data.message || 'ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง');
       }
@@ -48,11 +48,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
           <h2 className="text-3xl font-bold text-slate-900 font-sans">เข้าสู่ระบบ</h2>
           <p className="mt-2 text-sm text-slate-600">
-            ระบบจัดการข้อมูล Service Profile และ CQI <br/>
+            ระบบจัดการข้อมูล Service Profile และ CQI <br />
             <span className="text-xs text-emerald-600 font-medium">(สำหรับเจ้าหน้าที่ผู้ได้รับอนุญาต)</span>
           </p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
           <div className="space-y-4">
             <div className="relative group">
@@ -69,7 +69,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
               />
             </div>
             <div className="relative group">
-               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <KeyRound className="h-5 w-5 text-slate-400 group-focus-within:text-emerald-400 transition-colors" />
               </div>
               <input
@@ -97,13 +97,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
               className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-300 shadow-lg hover:shadow-emerald-500/40 transform hover:-translate-y-1 active:scale-95 overflow-hidden ${isLoading ? 'cursor-wait opacity-90' : ''}`}
             >
               <div className="absolute inset-0 w-full h-full bg-white/20 skew-x-12 -translate-x-full group-hover:animate-shine" />
-              
+
               <span className="relative flex items-center gap-2">
                 {isLoading ? (
-                   <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
                 ) : (
                   <>
                     <ShieldCheck className="h-5 w-5 text-emerald-200 group-hover:text-white transition-colors" />
@@ -115,7 +115,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
         </form>
       </div>
-      
+
       <style>{`
         @keyframes shine {
           0% { transform: translateX(-100%) skewX(-12deg); }
