@@ -274,18 +274,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center gap-4">
-          <div className="p-3 rounded-full bg-emerald-100 text-emerald-600">
-            <Users className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-sm text-slate-500 font-medium">ทีมทั้งหมด</p>
-            <div className="flex items-baseline gap-2">
-              <h3 className="text-2xl font-bold text-slate-800">{stats.totalTeams}</h3>
-              <span className="text-xs text-slate-400">(หน่วยงาน {stats.totalUnits} + FA {stats.totalFATeams})</span>
-            </div>
-          </div>
-        </div>
 
         {/* Hospital Profile Card */}
         <HospitalProfileCard currentUser={currentUser} onRequestLogin={onRequestLogin} />
@@ -344,6 +332,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
                 {stats.usingManualCqi && <span className="text-[10px] bg-slate-100 text-slate-500 px-1 rounded border border-slate-200">Manual</span>}
               </h3>
             )}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center gap-4">
+          <div className="p-3 rounded-full bg-emerald-100 text-emerald-600">
+            <Users className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 font-medium">ทีมทั้งหมด</p>
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-2xl font-bold text-slate-800">{stats.totalTeams}</h3>
+              <span className="text-xs text-slate-400">(หน่วยงาน {stats.totalUnits} + FA {stats.totalFATeams})</span>
+            </div>
           </div>
         </div>
 

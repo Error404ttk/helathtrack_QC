@@ -1,4 +1,4 @@
-import { LucideIcon, Shield, LayoutDashboard, Database, Star } from 'lucide-react';
+import { LucideIcon, Shield, LayoutDashboard, Database, Star, FileText } from 'lucide-react';
 
 export interface ChangeLogItem {
     icon: LucideIcon;
@@ -16,6 +16,25 @@ export interface ReleaseNote {
 }
 
 export const changelogData: ReleaseNote[] = [
+    {
+        version: "2.0.1",
+        date: "3 ก.พ. 2026",
+        isMajor: false,
+        description: "New Feature: Hospital Profile Tracking",
+        changes: [
+            {
+                icon: FileText,
+                iconColor: "text-indigo-600",
+                title: "Hospital Profile",
+                items: [
+                    "เพิ่มระบบติดตามเอกสาร Hospital Profile (ข้อมูลองค์กรประจำปี)",
+                    "รองรับการอัปโหลดไฟล์ PDF แยกตามปี พ.ศ.",
+                    "ระบบจัดการไฟล์: อัปโหลด, ดูไฟล์, แก้ไข (อัปโหลดทับ), และลบไฟล์",
+                    "เพิ่มยืนยันการลบแบบ Modal และแจ้งเตือนสถานะการทำงานด้วย Notification Toast"
+                ]
+            }
+        ]
+    },
     {
         version: "2.0.0",
         date: "28 ม.ค. 2026",
