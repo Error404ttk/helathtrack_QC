@@ -405,6 +405,31 @@ app.put('/api/hospital-profiles/:year', upload.single('file'), async (req, res) 
   }
 });
 
+app.delete('/api/hospital-profiles/:year', async (req, res) => {
+  const { year } = req.params;
+  try {
+    // 1. Get file path
+    const [rows] = await db.query('SELECT file_path FROM hospital_profiles WHERE year = ?', [year]);
+    if (rows.length > 0 && rows[0].file_path) {
+      const filePath = path.join(uploadDir, rows[0].file_path);
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (e) {
+          console.error('Failed to delete profile file:', e);
+        }
+      }
+    }
+
+    // 2. Delete record
+    await db.query('DELETE FROM hospital_profiles WHERE year = ?', [year]);
+
+    res.json({ success: true, year });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
