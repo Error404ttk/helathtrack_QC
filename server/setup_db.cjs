@@ -31,6 +31,18 @@ async function setup() {
             }
         }
 
+        // 3. Create Hospital Profiles Table
+        console.log('3. Checking/Creating hospital_profiles table...');
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS hospital_profiles (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                year INT NOT NULL UNIQUE,
+                file_path VARCHAR(255),
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        `);
+        console.log('   [OK] hospital_profiles table check complete.');
+
         console.log('\n--- Setup Complete ---');
         console.log('You can now restart the server: pm2 restart all');
         process.exit(0);

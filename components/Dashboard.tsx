@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Department, Team, DocStatus, User } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { CheckCircle, AlertCircle, FileText, Users, RotateCcw, Award, Target, Activity, CheckCircle2, X, Edit2, Save, Shield, Search, Paperclip } from 'lucide-react';
+import { HospitalProfileCard } from './HospitalProfileCard';
 
 interface DashboardProps {
   departments: Department[];
@@ -285,6 +286,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
             </div>
           </div>
         </div>
+
+        {/* Hospital Profile Card */}
+        <HospitalProfileCard currentUser={currentUser} onRequestLogin={onRequestLogin} />
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center gap-4">
           <div className="p-3 rounded-full bg-blue-100 text-blue-600">

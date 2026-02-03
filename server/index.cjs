@@ -340,6 +340,71 @@ app.put('/api/settings/:key', async (req, res) => {
   }
 });
 
+// --- HOSPITAL PROFILES ---
+app.get('/api/hospital-profiles', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT id, year, file_path as filePath, updated_at as updatedAt FROM hospital_profiles ORDER BY year DESC');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/hospital-profiles/:year', async (req, res) => {
+  const { year } = req.params;
+  try {
+    const [rows] = await db.query('SELECT id, year, file_path as filePath, updated_at as updatedAt FROM hospital_profiles WHERE year = ?', [year]);
+    if (rows.length > 0) {
+      res.json(rows[0]);
+    } else {
+      // Return null instead of 404 to avoid console errors
+      res.json(null);
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/hospital-profiles/:year', upload.single('file'), async (req, res) => {
+  const { year } = req.params;
+
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded or invalid file type' });
+  }
+
+  const filename = req.file.filename;
+
+  try {
+    // Check if exists
+    const [existing] = await db.query('SELECT file_path FROM hospital_profiles WHERE year = ?', [year]);
+
+    if (existing.length > 0) {
+      // Delete old file if exists
+      const oldFile = existing[0].file_path;
+      if (oldFile) {
+        const oldFilePath = path.join(uploadDir, oldFile);
+        if (fs.existsSync(oldFilePath)) {
+          try {
+            fs.unlinkSync(oldFilePath);
+          } catch (e) {
+            console.error('Failed to delete old profile file:', e);
+          }
+        }
+      }
+
+      // Update
+      await db.query('UPDATE hospital_profiles SET file_path = ? WHERE year = ?', [filename, year]);
+    } else {
+      // Insert
+      await db.query('INSERT INTO hospital_profiles (year, file_path) VALUES (?, ?)', [year, filename]);
+    }
+
+    res.json({ success: true, filename, year });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

@@ -24,6 +24,13 @@ export interface Team {
   lastUpdated: string;
 }
 
+export interface HospitalProfile {
+  id: number;
+  year: number;
+  filePath: string | null;
+  updatedAt: string;
+}
+
 export interface User {
   id: number;
   username: string;
