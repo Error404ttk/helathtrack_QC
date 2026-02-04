@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Department, Team, DocStatus, User } from '../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { CheckCircle, AlertCircle, FileText, Users, RotateCcw, Award, Target, Activity, CheckCircle2, X, Edit2, Save, Shield, Search, Paperclip } from 'lucide-react';
+import { CheckCircle, AlertCircle, FileText, Users, RotateCcw, Award, Target, Activity, CheckCircle2, X, Shield, Search, Paperclip } from 'lucide-react';
 import { HospitalProfileCard } from './HospitalProfileCard';
 
 interface DashboardProps {
@@ -15,47 +15,8 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefresh, currentUser, onRequestLogin }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
-  const [manualCqiCount, setManualCqiCount] = useState<number | null>(null);
-  const [isEditingCqi, setIsEditingCqi] = useState(false);
-  const [tempCqiVal, setTempCqiVal] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [showLoginModal, setShowLoginModal] = useState(false);
-
-  // ... (fetchSettings and saveManualCqi remain same) ...
-
-  const fetchSettings = async () => {
-    try {
-      const res = await fetch(import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/settings/manual_cqi_count` : '/api/settings/manual_cqi_count');
-      const data = await res.json();
-      if (data.value !== null && data.value !== '') {
-        setManualCqiCount(parseInt(data.value, 10));
-      } else {
-        setManualCqiCount(null);
-      }
-    } catch (err) {
-      console.error('Failed to fetch settings', err);
-    }
-  };
-
-  useEffect(() => {
-    fetchSettings();
-  }, [isRefreshing]);
-
-  const saveManualCqi = async () => {
-    try {
-      const val = tempCqiVal === '' ? null : parseInt(tempCqiVal, 10);
-      await fetch(import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/settings/manual_cqi_count` : '/api/settings/manual_cqi_count', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value: val === null ? '' : val.toString() })
-      });
-      setManualCqiCount(val);
-      setIsEditingCqi(false);
-      showNotification('บันทึกยอด CQI เรียบร้อยแล้ว');
-    } catch (err) {
-      showNotification('บันทึกไม่สำเร็จ', 'error');
-    }
-  };
 
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
     setNotification({ message, type });
@@ -98,12 +59,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
     const spSubmitted = unitTeams.filter(t => t.serviceProfileStatus === DocStatus.SUBMITTED).length;
 
     // CQI is relevant for ALL
-    const realCqiSubmitted = teams.filter(t =>
+
+    // CQI logic (sum of teams that submitted)
+    const cqiSubmitted = teams.filter(t =>
       t.cqiStatus === DocStatus.SUBMITTED || (t.cqiSubmittedCount && t.cqiSubmittedCount > 0)
     ).length;
-
-    // Use manual global count if set (and not NaN), otherwise use sum of teams
-    const cqiSubmitted = manualCqiCount !== null && !isNaN(manualCqiCount) ? manualCqiCount : realCqiSubmitted;
 
     // Logic for completion:
     // Unit: SP && CQI
@@ -132,9 +92,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
       spRate,
       cqiRate,
       overallRate,
-      usingManualCqi: manualCqiCount !== null && !isNaN(manualCqiCount)
     };
-  }, [teams, manualCqiCount]);
+  }, [teams]);
 
   // Chart Data Preparation
   const pieData = [
@@ -297,41 +256,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
             <p className="text-sm text-slate-500 font-medium">CQI Project</p>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-xs text-slate-400">*ทุกทีมต้องส่ง</span>
-              <button
-                onClick={() => {
-                  setTempCqiVal(manualCqiCount !== null ? manualCqiCount.toString() : stats.cqiSubmitted.toString());
-                  setIsEditingCqi(true);
-                }}
-                className="text-slate-300 hover:text-emerald-600 transition-colors"
-                title="แก้ไขยอดส่ง"
-              >
-                <Edit2 className="w-3 h-3" />
-              </button>
             </div>
 
-            {isEditingCqi ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  value={tempCqiVal}
-                  onChange={(e) => setTempCqiVal(e.target.value)}
-                  className="w-20 px-2 py-1 text-lg border border-emerald-300 rounded focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                  autoFocus
-                />
-                <button onClick={saveManualCqi} className="p-1 bg-emerald-500 text-white rounded hover:bg-emerald-600">
-                  <Save className="w-4 h-4" />
-                </button>
-                <button onClick={() => setIsEditingCqi(false)} className="p-1 bg-slate-200 text-slate-600 rounded hover:bg-slate-300">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                {stats.cqiRate}%
-                <span className="text-sm text-emerald-600 font-semibold">ส่งแล้ว ({stats.cqiSubmitted})</span>
-                {stats.usingManualCqi && <span className="text-[10px] bg-slate-100 text-slate-500 px-1 rounded border border-slate-200">Manual</span>}
-              </h3>
-            )}
+            <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+              {stats.cqiRate}%
+              <span className="text-sm text-emerald-600 font-semibold">ส่งแล้ว ({stats.cqiSubmitted})</span>
+            </h3>
           </div>
         </div>
 
