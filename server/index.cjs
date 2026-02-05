@@ -258,11 +258,17 @@ const upload = multer({
 // Serve uploads statically - PROTECTED
 app.use('/api/uploads', authMiddleware, express.static(uploadDir));
 
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded or invalid file type' });
+app.post('/api/upload', upload.array('file'), (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ error: 'No files uploaded or invalid file type' });
   }
-  res.json({ filename: req.file.filename, path: `/api/uploads/${req.file.filename}` });
+  const filenames = req.files.map(f => f.filename);
+  // Return both single filename (for backward compatibility/single upload) and array
+  res.json({
+    filename: filenames[0],
+    filenames: filenames,
+    path: `/api/uploads/${filenames[0]}`
+  });
 });
 
 app.put('/api/teams/:id/file', async (req, res) => {
@@ -279,16 +285,35 @@ app.put('/api/teams/:id/file', async (req, res) => {
     // 1. Get current file to delete it from disk if needed
     const [rows] = await db.query(`SELECT ${column} as currentFile FROM teams WHERE id = ?`, [id]);
     if (rows.length > 0 && rows[0].currentFile) {
-      const oldFilePath = path.join(uploadDir, rows[0].currentFile);
-      if (fs.existsSync(oldFilePath)) {
+      const oldFileVal = rows[0].currentFile;
+      let filesToDelete = [];
+
+      // Check if it's a JSON array
+      if (oldFileVal.trim().startsWith('[') && oldFileVal.trim().endsWith(']')) {
         try {
-          fs.unlinkSync(oldFilePath);
-          console.log(`Deleted old file: ${oldFilePath}`);
-        } catch (err) {
-          console.error(`Failed to delete old file: ${err.message}`);
-          // Continue execution - don't block DB update
+          const parsed = JSON.parse(oldFileVal);
+          if (Array.isArray(parsed)) {
+            filesToDelete = parsed;
+          }
+        } catch (e) {
+          // Not valid JSON, assume single file
+          filesToDelete = [oldFileVal];
         }
+      } else {
+        filesToDelete = [oldFileVal];
       }
+
+      filesToDelete.forEach(f => {
+        const oldFilePath = path.join(uploadDir, f);
+        if (fs.existsSync(oldFilePath)) {
+          try {
+            fs.unlinkSync(oldFilePath);
+            console.log(`Deleted old file: ${oldFilePath}`);
+          } catch (err) {
+            console.error(`Failed to delete old file: ${err.message}`);
+          }
+        }
+      });
     }
 
     // 2. Update DB

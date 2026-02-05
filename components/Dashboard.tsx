@@ -361,13 +361,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
                           <span className="text-slate-300 text-xs">-</span>
                         )}
                         {team.cqiFile && (
-                          <a
-                            href="#"
-                            onClick={(e) => handleFileClick(e, team.cqiFile!)}
-                            className="inline-flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-800 hover:underline mt-0.5"
-                          >
-                            <Paperclip className="w-3 h-3" /> ดูไฟล์
-                          </a>
+                          <div className="flex flex-col gap-1 items-center">
+                            {(() => {
+                              let files: string[] = [];
+                              if (team.cqiFile.startsWith('[') && team.cqiFile.endsWith(']')) {
+                                try {
+                                  files = JSON.parse(team.cqiFile);
+                                } catch (e) { files = [team.cqiFile]; }
+                              } else {
+                                files = [team.cqiFile];
+                              }
+
+                              return files.map((f, i) => (
+                                <a
+                                  key={i}
+                                  href="#"
+                                  onClick={(e) => handleFileClick(e, f)}
+                                  className="inline-flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-800 hover:underline mt-0.5"
+                                >
+                                  <Paperclip className="w-3 h-3" />
+                                  {files.length > 1 ? `ไฟล์ ${i + 1}` : 'ดูไฟล์'}
+                                </a>
+                              ));
+                            })()}
+                          </div>
                         )}
                       </div>
                     </td>
@@ -463,13 +480,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ departments, teams, onRefr
                           <span className="text-slate-300 text-xs">-</span>
                         )}
                         {team.cqiFile && (
-                          <a
-                            href="#"
-                            onClick={(e) => handleFileClick(e, team.cqiFile!)}
-                            className="inline-flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-800 hover:underline mt-0.5"
-                          >
-                            <Paperclip className="w-3 h-3" /> ดูไฟล์
-                          </a>
+                          <div className="flex flex-col gap-1 items-center">
+                            {(() => {
+                              let files: string[] = [];
+                              if (team.cqiFile.startsWith('[') && team.cqiFile.endsWith(']')) {
+                                try {
+                                  files = JSON.parse(team.cqiFile);
+                                } catch (e) { files = [team.cqiFile]; }
+                              } else {
+                                files = [team.cqiFile];
+                              }
+
+                              return files.map((f, i) => (
+                                <a
+                                  key={i}
+                                  href="#"
+                                  onClick={(e) => handleFileClick(e, f)}
+                                  className="inline-flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-800 hover:underline mt-0.5"
+                                >
+                                  <Paperclip className="w-3 h-3" />
+                                  {files.length > 1 ? `ไฟล์ ${i + 1}` : 'ดูไฟล์'}
+                                </a>
+                              ));
+                            })()}
+                          </div>
                         )}
                       </div>
                     </td>

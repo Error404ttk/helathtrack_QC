@@ -43,7 +43,7 @@ export const DataEntry: React.FC<DataEntryProps> = ({
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadTeamId, setUploadTeamId] = useState<string | null>(null);
   const [uploadType, setUploadType] = useState<'SP' | 'CQI'>('SP');
-  const [fileToUpload, setFileToUpload] = useState<File | null>(null);
+  const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -100,23 +100,25 @@ export const DataEntry: React.FC<DataEntryProps> = ({
   const openUploadModal = (teamId: string, type: 'SP' | 'CQI') => {
     setUploadTeamId(teamId);
     setUploadType(type);
-    setFileToUpload(null);
+    setFilesToUpload([]);
     setIsUploadModalOpen(true);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setFileToUpload(e.target.files[0]);
+      setFilesToUpload(Array.from(e.target.files));
     }
   };
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fileToUpload || !uploadTeamId || !onUpdateFile) return;
+    if (filesToUpload.length === 0 || !uploadTeamId || !onUpdateFile) return;
 
     setIsUploading(true);
     const formData = new FormData();
-    formData.append('file', fileToUpload);
+    filesToUpload.forEach(file => {
+      formData.append('file', file);
+    });
 
     try {
       const res = await fetch('/api/upload', {
@@ -126,7 +128,23 @@ export const DataEntry: React.FC<DataEntryProps> = ({
 
       if (res.ok) {
         const data = await res.json();
-        await onUpdateFile(uploadTeamId, uploadType, data.filename);
+        // If CQI, use the array. If SP, use single (or just the first one)
+        // For multiple files, we'll store JSON string
+        let filenameToSave = data.filename;
+        if (uploadType === 'CQI' && data.filenames && data.filenames.length > 0) {
+          filenameToSave = JSON.stringify(data.filenames);
+        }
+
+        await onUpdateFile(uploadTeamId, uploadType, filenameToSave);
+
+        // Update CQI Count if applicable
+        if (uploadType === 'CQI' && onUpdateCqiInfo) {
+          const team = teams.find(t => t.id === uploadTeamId);
+          // Auto-count based on number of uploaded files
+          const quantity = filesToUpload.length;
+          await onUpdateCqiInfo(uploadTeamId, quantity, team?.cqiColor || null);
+        }
+
         showNotification('อัปโหลดไฟล์สำเร็จ');
         setIsUploadModalOpen(false);
       } else {
@@ -137,7 +155,7 @@ export const DataEntry: React.FC<DataEntryProps> = ({
       showNotification('เกิดข้อผิดพลาดในการอัปโหลด', 'error');
     } finally {
       setIsUploading(false);
-      setFileToUpload(null);
+      setFilesToUpload([]);
     }
   };
 
@@ -145,6 +163,13 @@ export const DataEntry: React.FC<DataEntryProps> = ({
     if (confirm('คุณต้องการลบไฟล์นี้ใช่หรือไม่?')) {
       if (onUpdateFile) {
         await onUpdateFile(teamId, type, null);
+
+        // If CQI, also reset the count to 0 (keep color)
+        if (type === 'CQI' && onUpdateCqiInfo) {
+          const team = teams.find(t => t.id === teamId);
+          await onUpdateCqiInfo(teamId, 0, team?.cqiColor || null);
+        }
+
         showNotification('ลบไฟล์สำเร็จ');
       }
     }
@@ -510,30 +535,49 @@ export const DataEntry: React.FC<DataEntryProps> = ({
                             ) : 'ยังไม่ส่ง'}
                           </button>
                           {team.cqiFile ? (
-                            <div className="flex items-center bg-slate-100 rounded-full px-1 border border-slate-200">
-                              <a
-                                href={`/api/uploads/${team.cqiFile}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1.5 text-blue-600 hover:bg-white hover:scale-110 rounded-full transition-all"
-                                title="ดาวน์โหลด (CQI)"
-                              >
-                                <Paperclip className="w-3.5 h-3.5" />
-                              </a>
-                              <button
-                                onClick={() => openUploadModal(team.id, 'CQI')}
-                                className="p-1.5 text-amber-600 hover:bg-white hover:scale-110 rounded-full transition-all"
-                                title="แก้ไขไฟล์ (CQI)"
-                              >
-                                <div className="w-3.5 h-3.5 border-2 border-current rounded-full flex items-center justify-center text-[8px] font-bold">/</div>
-                              </button>
-                              <button
-                                onClick={() => handleDeleteFile(team.id, 'CQI')}
-                                className="p-1.5 text-red-500 hover:bg-white hover:scale-110 rounded-full transition-all"
-                                title="ลบไฟล์ (CQI)"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
+                            <div className="flex flex-col gap-1">
+                              {(() => {
+                                let files: string[] = [];
+                                if (team.cqiFile.startsWith('[') && team.cqiFile.endsWith(']')) {
+                                  try {
+                                    files = JSON.parse(team.cqiFile);
+                                  } catch (e) { files = [team.cqiFile]; }
+                                } else {
+                                  files = [team.cqiFile];
+                                }
+
+                                return (
+                                  <div className="flex items-center bg-slate-100 rounded-full px-1 border border-slate-200">
+                                    {files.map((f, i) => (
+                                      <a
+                                        key={i}
+                                        href={`/api/uploads/${f}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-1.5 text-blue-600 hover:bg-white hover:scale-110 rounded-full transition-all"
+                                        title={`ดาวน์โหลด (CQI File ${i + 1})`}
+                                      >
+                                        <Paperclip className="w-3.5 h-3.5" />
+                                        {files.length > 1 && <span className="text-[9px] align-top text-blue-800 font-bold -ml-1">{i + 1}</span>}
+                                      </a>
+                                    ))}
+                                    <button
+                                      onClick={() => openUploadModal(team.id, 'CQI')}
+                                      className="p-1.5 text-amber-600 hover:bg-white hover:scale-110 rounded-full transition-all"
+                                      title="แก้ไขไฟล์ (CQI)"
+                                    >
+                                      <div className="w-3.5 h-3.5 border-2 border-current rounded-full flex items-center justify-center text-[8px] font-bold">/</div>
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteFile(team.id, 'CQI')}
+                                      className="p-1.5 text-red-500 hover:bg-white hover:scale-110 rounded-full transition-all"
+                                      title="ลบไฟล์ (CQI)"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           ) : (
                             <button
@@ -552,16 +596,10 @@ export const DataEntry: React.FC<DataEntryProps> = ({
                         <div className="flex flex-col items-center gap-2">
                           <div className="flex items-center gap-2">
                             <input
-                              type="number"
-                              className="w-16 px-2 py-1 border border-slate-300 rounded text-center text-sm focus:ring-emerald-500 focus:border-emerald-500"
-                              placeholder="0"
-                              defaultValue={team.cqiSubmittedCount || 0}
-                              onBlur={(e) => {
-                                if (onUpdateCqiInfo) {
-                                  const val = parseInt(e.target.value, 10);
-                                  onUpdateCqiInfo(team.id, isNaN(val) ? 0 : val, team.cqiColor || null);
-                                }
-                              }}
+                              type="text"
+                              readOnly
+                              className="w-16 px-2 py-1 border border-slate-200 rounded text-center text-sm bg-slate-50 text-slate-500 cursor-not-allowed focus:outline-none"
+                              value={team.cqiSubmittedCount || 0}
                             />
                             <div className="relative group">
                               <button className={`w-6 h-6 rounded-full border shadow-sm ${team.cqiColor ? '' : 'bg-white'}`} style={{ backgroundColor: team.cqiColor || '#ffffff' }} />
@@ -664,16 +702,21 @@ export const DataEntry: React.FC<DataEntryProps> = ({
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-emerald-50">
-                    <FileText className={`w-6 h-6 ${fileToUpload ? 'text-emerald-600' : 'text-slate-400 group-hover:text-emerald-500'}`} />
+                    <FileText className={`w-6 h-6 ${filesToUpload.length > 0 ? 'text-emerald-600' : 'text-slate-400 group-hover:text-emerald-500'}`} />
                   </div>
-                  {fileToUpload ? (
-                    <p className="text-emerald-600 font-medium text-sm truncate max-w-full px-2">
-                      {fileToUpload.name}
-                    </p>
+                  {filesToUpload.length > 0 ? (
+                    <div className="space-y-1">
+                      {filesToUpload.map((f, i) => (
+                        <p key={i} className="text-emerald-600 font-medium text-sm truncate max-w-full px-2">
+                          {f.name}
+                        </p>
+                      ))}
+                      <p className="text-xs text-slate-400 mt-2">({filesToUpload.length} ไฟล์ที่เลือก)</p>
+                    </div>
                   ) : (
                     <>
                       <p className="text-slate-600 font-medium text-sm">คลิกเพื่อเลือกไฟล์ PDF</p>
-                      <p className="text-slate-400 text-xs mt-1">รองรับเฉพาะไฟล์ .pdf เท่านั้น</p>
+                      <p className="text-slate-400 text-xs mt-1">รองรับเฉพาะไฟล์ .pdf ({uploadType === 'CQI' ? 'ได้หลายไฟล์' : 'ไฟล์เดียว'})</p>
                     </>
                   )}
                   <input
@@ -682,8 +725,15 @@ export const DataEntry: React.FC<DataEntryProps> = ({
                     onChange={handleFileChange}
                     accept=".pdf"
                     className="hidden"
+                    multiple={uploadType === 'CQI'}
                   />
                 </div>
+
+                {uploadType === 'CQI' && (
+                  <p className="text-center text-sm text-emerald-600 font-medium mb-4">
+                    ระบบจะนับจำนวนเรื่อง CQI จากจำนวนไฟล์ที่อัปโหลดโดยอัตโนมัติ
+                  </p>
+                )}
 
                 <div className="flex gap-3 pt-2">
                   <button
@@ -695,7 +745,7 @@ export const DataEntry: React.FC<DataEntryProps> = ({
                   </button>
                   <button
                     type="submit"
-                    disabled={!fileToUpload || isUploading}
+                    disabled={filesToUpload.length === 0 || isUploading}
                     className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md disabled:opacity-50 disabled:shadow-none transition-all text-sm flex items-center justify-center gap-2"
                   >
                     {isUploading ? (
